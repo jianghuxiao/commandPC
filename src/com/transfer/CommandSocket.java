@@ -5,27 +5,46 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
+import Dock.ISocket;
+import Dock.SocketDock;
+
 import com.transfer.cmd.Command;
 import com.transfer.cmd.DataPackage;
 import com.util.Config;
 import com.util.LogTool;
+import com.util._Random;
 
-public class CommandSocket {
+public class CommandSocket implements ISocket {
 	
 	Socket socket = null;
 	DataOutputStream out = null;
 	DataInputStream in = null;
 	
-	public CommandSocket()
+	String currentID = null;
+	
+	public CommandSocket(String currentId)
 	{
-		(new Thread(runnable)).start();
+		CreateSocker(currentId);
+	}
+	
+	/**
+	 * create socket
+	 */
+	private void CreateSocker(String currentId){
+		Thread thread = new Thread(runnable);
+		thread.start();
+		
+		if(currentId != null)
+			currentID = currentId;
+		else
+			currentID = _Random.createKey();
+
+		SocketDock.Register(currentID, this);
 	}
 	
 	Runnable runnable = new Runnable(){
 		public void run() {
 			// TODO Auto-generated method stub
-			boolean isException = false;
-			
 			try {
 				socket = new Socket(Config.IP_ADDRESS, Config.PORT);
 				out = new DataOutputStream(socket.getOutputStream());
@@ -52,17 +71,12 @@ public class CommandSocket {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				LogTool.printException(e);
-				
-				isException = true;
 			}finally{
 				try{
 					in.close();
 					out.close();
 					socket.close();
 				}catch(IOException e){}
-				
-				if(isException)
-					handleException();
 			}
 		}
 	};
@@ -124,6 +138,10 @@ public class CommandSocket {
 					out.writeUTF(DataPackage.createCmdInfo(Command.RESTART_MACHINE, message));
 					out.flush();
 					break;
+				case Command.OTHER:
+					out.writeUTF(DataPackage.createCmdInfo(Command.OTHER, message));
+					out.flush();
+					break;
 			}
 		}catch(Exception e){
 			LogTool.printException(e);
@@ -143,6 +161,14 @@ public class CommandSocket {
 	 * handle exception
 	 */
 	private void handleException(){
+		SocketDock.Unregister(currentID);
 		
+		new CommandSocket(currentID);
+	}
+
+	@Override
+	public void checkConnect() {
+		// TODO Auto-generated method stub
+		sendCommand(Command.CONNECTING, null);
 	}
 }
