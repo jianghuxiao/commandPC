@@ -55,7 +55,7 @@ public class CommandSocket implements ISocket {
 				while(true){
 					String info = in.readUTF();
 					
-					System.out.println("Response info: " + info);
+					//System.out.println("Response info: " + info);
 					
 					CmdInfo cmdInfo = parseCmdInfo(info);
 					if(cmdInfo == null)
@@ -63,6 +63,9 @@ public class CommandSocket implements ISocket {
 					
 					switch(cmdInfo.command){
 						case Command.SUCCESS:
+							break;
+						case Command.OTHER:
+							System.out.println(cmdInfo.message);
 							break;
 					}
 				}
